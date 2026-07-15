@@ -1,8 +1,18 @@
 # readflow
 
-Select text anywhere on macOS. Press `Ctrl+Esc`. Hear it read aloud. Press again to stop.
+I wanted to *hear* what Claude Code and Codex tell me instead of reading walls of terminal text. So: select the text, press `Ctrl+Esc`, and it reads it out loud. Works in any app on macOS — terminal, browser, PDF. Press again to stop.
 
-readflow is a single Hammerspoon config — no app bundle, no background daemon of its own, no telemetry. It reads with fast AI voices and degrades gracefully: if one voice tier is unavailable, the next takes over mid-sentence.
+I didn't want another app bloating my Mac, so readflow is just one script (~300 lines of Lua) running on [Hammerspoon](https://www.hammerspoon.org/), a native macOS automation engine. No app bundle, no daemon, no telemetry. The only thing you'll see is a small waveform icon in the menu bar.
+
+## Three voices, switching automatically
+
+readflow always finds a voice — it degrades gracefully, even mid-sentence:
+
+1. **Groq** — if you have a [free API key](https://console.groq.com/keys) and quota left, you get the Orpheus AI voices. Best quality. (Free tier is ~2–4 pages a day; paid is about a cent per page.)
+2. **Local AI voice** — when Groq's quota runs out (or you never set a key), a small Kokoro model running on your own Mac takes over. Free, unlimited, offline. Sounds nearly as good.
+3. **macOS built-in** — if the local voice isn't installed or somehow broken, the plain system voice steps in. Always works.
+
+You never configure which one — it just switches and tells you when it does.
 
 ## Install
 
@@ -10,34 +20,20 @@ readflow is a single Hammerspoon config — no app bundle, no background daemon 
 curl -fsSL https://raw.githubusercontent.com/michiosw/readflow/main/install.sh | bash
 ```
 
-The guided installer sets up [Hammerspoon](https://www.hammerspoon.org/) if needed, asks for an optional Groq API key, offers the free local voice, walks you through the one-time Accessibility permission, and says hello when it's done. Requires macOS and [Homebrew](https://brew.sh/).
+Takes about a minute: sets up Hammerspoon if needed, asks for the optional Groq key, offers the local voice (~400 MB, recommended), walks you through the one-time Accessibility permission, and says hello out loud when it's done. Requires macOS and [Homebrew](https://brew.sh/).
 
-## Voices
+Settings live in the menu bar icon: paste a key, pick a voice, test it.
 
-readflow picks the best available tier and switches automatically — even mid-read:
+## Privacy
 
-| Tier | Voice | Cost | Notes |
-| --- | --- | --- | --- |
-| 1 | Orpheus via [Groq](https://console.groq.com/keys) | Free tier: 3,600 tokens/day (~2–4 pages), then $22/1M chars | Six voices, best quality. Accept the model terms [once](https://console.groq.com/playground?model=canopylabs%2Forpheus-v1-english). |
-| 2 | Kokoro, local | Free, unlimited | Runs on your Mac (Apple Silicon, ~400 MB). Private and offline. |
-| 3 | macOS built-in | Free | Always available. |
+Only the Groq tier sends anything anywhere — the text you select, to Groq, when you press the hotkey, nothing else. The local and built-in voices never leave your Mac. There is no readflow server.
 
-Text is split at sentence boundaries and streamed chunk by chunk; the first audio typically starts in one to two seconds.
+## Uninstall
 
-## Settings
-
-Everyday settings live in the menu bar (the small waveform icon): API key, voice, a test button. The hotkey and providers are plain values at the top of [init.lua](init.lua) — the endpoints are OpenAI-compatible, so any `/v1/audio/speech` server works.
-
-## Notes
-
-**Hammerspoon?** An open-source macOS automation engine — readflow runs inside it the way a script runs inside Node. It provides the global hotkey, the simulated `Cmd+C` that grabs your selection, and audio playback. Its own icon is hidden; you only see readflow's.
-
-**Privacy.** With a Groq key, the text you select is sent to Groq when you press the hotkey — nowhere else. The local and built-in tiers never leave your Mac.
-
-**Uninstall.** Remove the `~/.hammerspoon/init.lua` symlink and `~/.readflow`. If you installed the local voice: `launchctl bootout gui/$UID/dev.readflow.kokoro`, then remove `~/Library/LaunchAgents/dev.readflow.kokoro.plist` and `~/.local/share/readflow`.
+Remove the `~/.hammerspoon/init.lua` symlink and `~/.readflow`. If you installed the local voice: `launchctl bootout gui/$UID/dev.readflow.kokoro`, then delete `~/Library/LaunchAgents/dev.readflow.kokoro.plist` and `~/.local/share/readflow`.
 
 ## Credits
 
-Inspired by [freeflow](https://github.com/zachlatta/freeflow) — the same idea in the opposite direction.
+Inspired by [freeflow](https://github.com/zachlatta/freeflow) — the same idea in the opposite direction (your voice → text).
 
 MIT © 2026 Michel Osswald
