@@ -17,7 +17,7 @@ local CONFIG = {
   firstChunk = 200,
   chunk = 400,
   hardChunk = 450, -- ponytail: stay below Groq's unstable/oversize request range
-  maxChars = 4000,
+  maxChars = 4000, -- per fetch window; longer selections continue window by window
 }
 local VOICES = { "austin", "autumn", "daniel", "diana", "hannah", "troy" }
 
@@ -177,6 +177,10 @@ end
 fetchChunk = function(i, sess, retry)
   if sess ~= session or fetching or fetchDone then return end
   if i > #queueParts then
+    if #overflowText > 0 then
+      beginProvider(overflowText, sess)
+      return
+    end
     fetchDone = true
     finishIfIdle()
     return
@@ -297,6 +301,12 @@ end
 beginProvider = function(text, sess)
   local limited
   limited, overflowText = splitAt(text, CONFIG.maxChars)
+  if #overflowText > 0 then
+    local head, tail = limited:match("^(.*%s)(%S+)$")
+    if head and head:match("%S") then -- don't cut a word across windows
+      limited, overflowText = head, tail .. overflowText
+    end
+  end
   queueParts = chunkText(limited)
   nextToFetch = 1
   fetchDone = #queueParts == 0
