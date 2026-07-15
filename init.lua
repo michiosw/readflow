@@ -373,7 +373,7 @@ local function promptKey()
   end
 end
 
-local bar = hs.menubar.new()
+bar = hs.menubar.new() -- global on purpose: a local would be garbage-collected and the icon vanishes
 bar:setIcon(menubarIcon())
 bar:setTooltip("readflow — Ctrl+Esc reads your selection")
 bar:setMenu(function()
